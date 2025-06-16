@@ -151,11 +151,13 @@ function init() {
 
     // OrbitControls 設置: 啟用阻尼效果，提供更平滑的控制體驗
     controls = new OrbitControls(camera, renderer.domElement);
+
     controls.enableDamping = true; // 啟用阻尼（慣性）
     controls.dampingFactor = 0.05; // 阻尼係數
     controls.minDistance = 10; // 攝影機最近距離
     controls.maxDistance = 500; // 攝影機最遠距離
     controls.target.copy(DEFAULT_CAMERA_LOOKAT); // 初始化控制器目標
+
 
     // 環境光: 提供整體照明，使模型不會完全黑暗 (來自隊友的程式碼)
     scene.add(new THREE.HemisphereLight(0xffffff, 0x444444)); // 半球光，模擬天空和地面光
