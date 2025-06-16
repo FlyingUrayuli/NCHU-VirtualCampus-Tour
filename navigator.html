@@ -1,80 +1,164 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>校園模型展示</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* 自訂 CSS */
         body {
             margin: 0;
             overflow: hidden;
-            font-family: sans-serif;
+            font-family: 'Inter', sans-serif; /* 使用 Inter 字體 */
         }
 
+        /* 載入提示樣式 */
         #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 20px;
             border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000; /* 確保在最上層 */
         }
 
-        #infoCard {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            display: none;
+        /* 建築物說明欄樣式 */
+        #buildingInfoPanel {
+            background: rgba(255, 255, 255, 0.85); /* 半透明白色背景 */
+            padding: 1rem;
+            border-radius: 10px; /* 圓角 */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* 陰影 */
+            z-index: 900;
+            display: none; /* 預設隱藏 */
+            max-width: 300px; /* 設定最大寬度 */
         }
 
+        /* 返回按鈕樣式 */
+        #backToDefaultViewBtn {
+            background: linear-gradient(145deg, #60a5fa, #3b82f6); /* 漸層背景 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px; /* 圓角膠囊形狀 */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease; /* 平滑過渡效果 */
+            z-index: 950;
+            display: none; /* 預設隱藏 */
+            border: none; /* 無邊框 */
+            cursor: pointer;
+        }
+
+        #backToDefaultViewBtn:hover {
+            background: linear-gradient(145deg, #3b82f6, #2563eb); /* hover 漸層變深 */
+            transform: translateY(-2px); /* 輕微上浮效果 */
+        }
+
+        #backToDefaultViewBtn:active {
+            transform: translateY(0); /* 點擊下沉效果 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 右側建築物列表樣式 */
         #buildingList {
-            position: absolute;
-            top: 10px;
-            right: 10px;
             background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            max-height: 90vh;
-            overflow-y: auto;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            max-height: 90vh; /* 最大高度 */
+            overflow-y: auto; /* 垂直捲動 */
+            z-index: 900;
         }
 
         #buildingList button {
             display: block;
-            margin-bottom: 5px;
+            width: 100%; /* 讓按鈕佔滿寬度 */
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
             background: #f0f0f0;
             border: none;
-            padding: 5px 10px;
+            border-radius: 5px; /* 圓角 */
             text-align: left;
             cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
         }
 
         #buildingList button:hover {
-            background: #ccc;
+            background: #e0e0e0;
+            transform: translateX(3px); /* 輕微右移效果 */
+        }
+
+        /* 自訂滑鼠游標 */
+        .custom-cursor {
+            /* 使用 SVG 創建圓圈游標，並在游標中心對齊 */
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="rgba(255, 255, 255, 0.5)" stroke="black" stroke-width="1"/></svg>') 10 10, auto;
+        }
+
+        /* 響應式調整 */
+        @media (max-width: 768px) {
+            #buildingInfoPanel {
+                top: 10px; /* 在手機上調整位置 */
+                left: 10px;
+                right: 10px;
+                max-width: none; /* 佔滿寬度 */
+            }
+
+            #buildingList {
+                top: auto;
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                max-height: 30vh; /* 手機上列表高度限制 */
+            }
+
+            #backToDefaultViewBtn {
+                bottom: 10px;
+            }
+        }
+
+        /* 新增的過渡遮罩樣式 */
+        #transitionOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            opacity: 0; /* 預設透明 */
+            z-index: 999; /* 確保在大多數 UI 元素之上，但在載入提示之下 */
+            pointer-events: none; /* 允許點擊穿透，除非動畫中需要阻擋操作 */
+            transition: opacity 0.75s ease-in-out; /* 平滑的透明度過渡 */
         }
     </style>
     <script type="importmap">
     {
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js",
-        "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/"
+        "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.esm.js"
       }
     }
-  </script>
+    </script>
 </head>
-
 <body>
-    <div id="loading">載入中... 0%</div>
-    <div id="infoCard"><strong id="cardTitle"></strong><br><span id="cardContent"></span></div>
-    <div id="buildingList"></div>
+    <!-- 載入提示 -->
+    <div id="loading" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">載入中... 0%</div>
+
+    <!-- 建築物說明欄 -->
+    <div id="buildingInfoPanel" class="absolute top-4 left-4 hidden">
+        <h2 id="buildingName" class="text-xl font-bold mb-2"></h2> <!-- 建築物名稱 -->
+        <p id="buildingFeature" class="text-gray-700"></p> <!-- 建築物特色描述 -->
+    </div>
+
+    <!-- 返回預設視角按鈕 -->
+    <button id="backToDefaultViewBtn" class="absolute bottom-4 left-1/2 -translate-x-1/2">返回全景</button>
+
+    <!-- 右側建築物列表 -->
+    <div id="buildingList" class="absolute top-4 right-4 p-4 rounded-lg shadow-lg"></div>
+
+    <!-- 過渡遮罩 -->
+    <div id="transitionOverlay"></div>
 
     <script type="module" src="./js/main.js"></script>
-
-   
 </body>
-
 </html>
