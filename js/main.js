@@ -31,7 +31,7 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
+    // controls.enableDamping = true;
 
     const ambient = new THREE.AmbientLight(0xffffff, 1);
     scene.add(ambient);
