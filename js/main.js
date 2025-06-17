@@ -16,6 +16,12 @@ let selectedObject = null; // 儲存當前被點擊的建築物 (儲存 Group �
 // 可互動的建築物網格列表 (儲存 Group 物件)
 let interactiveBuildings = [];
 
+// 儲存場景中的鴨子物件 (duck1、duck2 ...)
+let duckObjects = [];
+
+// 找出湖的 group 和位置
+let lakeCenter = new THREE.Vector3(); // 建立 lake 中心的變數
+
 // DOM 元素引用
 const loadingDiv = document.getElementById('loading');
 const buildingInfoPanel = document.getElementById('buildingInfoPanel');
@@ -28,6 +34,9 @@ const transitionOverlay = document.getElementById('transitionOverlay'); // 遮�
 // 預設攝影機視角參數 (校門口上方視角)
 const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 30, 150); // 校門口上方位置 (X, Y, Z)
 const DEFAULT_CAMERA_LOOKAT = new THREE.Vector3(0, 10, 0); // 看向校園中心略高的位置
+
+// 記錄鴨子屬性
+const duckParams = [];
 
 // 模擬建築物資訊
 // cameraOffset 定義從建築物中心到攝影機的向量，用於微調視角
@@ -196,8 +205,32 @@ function init() {
                     addBuildingButton(child); // 為每個建築物添加按鈕到右側選單
                 }
                 // 忽略模型中非建築物的網格 (例如：樹木、地面、路燈等)，它們不應觸發任何互動效果。
+
+                // console.log('物件:', child.name);
+                // 找到群組內的鴨子放進鴨子陣列中
+                if (child.type === 'Group' && child.name.startsWith('duck')) {
+                    duckObjects.push(child);
+                    console.log('加入整隻鴨子:', child.name);
+                }
+
+                // 給鴨子一組隨機參數
+                duckParams.push({
+                    radius: 10 + Math.random() * 20, // 半徑 + 隨機
+                    speed: 0.3 + Math.random() * 0.8, // 速度隨機
+                    phase: Math.random() * Math.PI * 2, // 起始角度
+                    direction: Math.random() > 0.5 ? 1 : -1, // 順 or 逆
+                    rotationOffset: Math.PI / 2 // 假設 X 軸是前，+90度修正
+                });
+
+                if (child.name === 'building_中興湖') {
+                    console.log('✅ 找到湖:', child.name);
+                    // 取得湖的世界座標中心
+                    const bbox = new THREE.Box3().setFromObject(child);
+                    lakeCenter = bbox.getCenter(new THREE.Vector3());
+                    console.log('📍 湖中心位置:', lakeCenter);
+                }
             });
-           
+
 
             console.log('可互動建築物列表 (Group):', interactiveBuildings.map(b => b.name));
 
@@ -532,6 +565,75 @@ function showBuildingInfo(object) {
     console.log('資訊面板最終的 display 屬性:', getComputedStyle(buildingInfoPanel).display);
 }
 
+const ROTATION_OFFSET = Math.PI / 2;
+// 定義安全距離
+const DUCK_SAFE_DISTANCE = 15;
+
+function ducksMove(elapsed) {
+    const surfaceY = lakeCenter.y + 0.1;
+
+    duckObjects.forEach((duck, index) => {
+        const param = duckParams[index];
+        const angle = elapsed * param.speed * param.direction + param.phase;
+
+        const x = lakeCenter.x + Math.cos(angle) * param.radius;
+        const z = lakeCenter.z + Math.sin(angle) * param.radius;
+
+        // **第一步：設定鴨子的基本圓周運動位置**
+        // 將鴨子移動到其圓周運動應有的位置。
+        // avoidCollisions 將會以此為基礎進行調整。
+        duck.position.set(x, surfaceY, z);
+
+        // **第二步：呼叫新的閃避碰撞函數**
+        // 傳入當前鴨子、其索引、所有鴨子陣列和安全距離。
+        // 這個函數會直接修改 duck.position
+        avoidCollisions(duck, index, duckObjects, DUCK_SAFE_DISTANCE);
+        
+        // **第三步：更新鴨子的旋轉**
+        // 根據鴨子「最終（可能被調整過）的位置」來計算旋轉，使其面向移動方向。
+        const currentAngleRad = Math.atan2(duck.position.z - lakeCenter.z, duck.position.x - lakeCenter.x);
+        duck.rotation.y = currentAngleRad + param.rotationOffset + (param.direction === 1 ? -Math.PI / 2 : Math.PI / 2);
+    });
+}
+
+/**
+ * 檢查並避免當前鴨子與其他鴨子發生碰撞。
+ * 會直接修改 currentDuck 的 position。
+ * @param {THREE.Object3D} currentDuck - 當前要檢查的鴨子物件。
+ * @param {number} currentIndex - 當前鴨子在 duckObjects 陣列中的索引。
+ * @param {Array<THREE.Object3D>} allDucks - 所有鴨子物件的陣列 (duckObjects)。
+ * @param {number} safeDistance - 鴨子之間應保持的最小安全距離。
+ */
+function avoidCollisions(currentDuck, currentIndex, allDucks, safeDistance) {
+    // 取得當前鴨子的潛在位置（尚未設定到 actual position）
+    // 因為在 ducksMove() 裡面，我們是先算出一個 x, z，然後才設定 position。
+    // 所以這裡我們會直接操作 currentDuck 的 position，因為它已經是被計算後但尚未渲染的位置。
+    const currentPosition = currentDuck.position.clone(); // 複製一份，避免直接修改
+
+    allDucks.forEach((otherDuck, otherIndex) => {
+        // 不與自己比較
+        if (currentIndex === otherIndex) return; 
+
+        // 確保其他鴨子物件存在且有有效的位置
+        if (otherDuck && otherDuck.position) {
+            const distance = currentPosition.distanceTo(otherDuck.position);
+
+            if (distance < safeDistance) {
+                // 計算從其他鴨子指向當前鴨子的推開向量
+                const repulsionVector = new THREE.Vector3()
+                    .subVectors(currentPosition, otherDuck.position)
+                    .normalize();
+
+                // 應用推力：將當前鴨子稍微推開
+                // 這裡的 `0.5` 是推力強度
+                currentPosition.add(repulsionVector.multiplyScalar((safeDistance - distance) * 0.5));
+            }
+        }
+    });
+    // 將調整後的位置應用回當前鴨子
+    currentDuck.position.copy(currentPosition);
+}
+
 /**
  * 主動畫迴圈。
  */
@@ -542,6 +644,10 @@ function animate() {
 
     controls.update(); // 更新 OrbitControls
     renderer.render(scene, camera); // 渲染場景
+
+    // 取得已經過的時間 (秒數)
+    const elapsed = performance.now() * 0.001;
+    ducksMove(elapsed);
 }
 
 /**
