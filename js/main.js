@@ -26,10 +26,6 @@ const backToDefaultViewBtn = document.getElementById('backToDefaultViewBtn');
 const transitionOverlay = document.getElementById('transitionOverlay'); // 遮罩元素引用
 
 // 預設攝影機視角參數 (校門口上方視角)
-// 這些值需要根據您的實際模型校門口位置進行調整。
-// 這裡假設校門口在 Z 軸正方向，略微偏上。
-// 校門口 (building_gate) 的位置可能需要根據實際模型中心點和校門口位置來設定。
-// 這裡假設校門口 Group 的中心點大致在 (0, 0, 0) 附近，且在 Z 軸正方向。
 const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 30, 150); // 校門口上方位置 (X, Y, Z)
 const DEFAULT_CAMERA_LOOKAT = new THREE.Vector3(0, 10, 0); // 看向校園中心略高的位置
 
@@ -37,91 +33,91 @@ const DEFAULT_CAMERA_LOOKAT = new THREE.Vector3(0, 10, 0); // 看向校園中心
 // cameraOffset 定義從建築物中心到攝影機的向量，用於微調視角
 const BUILDING_DATA = {
     // 既有建築物資訊
-    'building_student_center': {
-        name: '學生活動中心',
-        description: '學生活動中心是學生日常活動、社團聚會和舉辦各類活動的重要場所。內部設有商店、餐廳、會議室等設施，為學生提供便利的生活機能與交流空間。',
-        cameraOffset: new THREE.Vector3(0, 15, 60)
-    },
-    'building_library': {
+    'building_圖書館': {
         name: '圖書館',
         description: '中興大學圖書館藏書豐富，提供多樣化的學術資源和研究空間。是學生學習、研究和獲取知識的核心場所，設有閱覽室、討論區和電腦設備。',
-        cameraOffset: new THREE.Vector3(40, 15, 0)
+        cameraOffset: new THREE.Vector3(0, 0, -90)
     },
-    'building_main_building': {
+    'building_行政大樓': {
         name: '行政大樓',
         description: '行政大樓是學校行政運作的核心，包含校長室、教務處、學務處等重要行政單位。其建築風格莊嚴，見證了學校的發展歷史，是師生辦理各項事務的主要地點。',
-        cameraOffset: new THREE.Vector3(-40, 15, 0)
+        cameraOffset: new THREE.Vector3(0, 0, -90)
     },
-    'building_research_building': {
+    'building_綜合教學大樓': {
         name: '綜合教學大樓',
         description: '綜合教學大樓提供了現代化的教學設施和實驗室，是多個學系的共用教學空間。設計注重採光和通風，為師生創造了舒適的學習環境。',
-        cameraOffset: new THREE.Vector3(0, 15, -60)
+        cameraOffset: new THREE.Vector3(190, 0, 0)
     },
-    'building_gym': {
-        name: '體育館',
-        description: '體育館是學校重要的運動設施，包含室內籃球場、羽球場及健身房等。除了日常體育課程，也常舉辦各類校內外體育賽事，是學生鍛鍊身體、參與體育活動的中心。',
-        cameraOffset: new THREE.Vector3(-30, 15, -30)
-    },
-    // 新增建築物資訊 (根據您的要求和常見的命名習慣推測 building_ 前綴)
-    'building_humanities_building': { // 人文大樓
+    'building_人文大樓': { // 人文大樓
         name: '人文大樓',
         description: '人文大樓是人文社會科學院的所在地，提供文學、歷史、哲學等學科的教學與研究空間。',
-        cameraOffset: new THREE.Vector3(20, 15, 30) // 假設在某個方向，可調整
+        cameraOffset: new THREE.Vector3(0, 0, -190)
     },
-    'building_gate': { // 校門口
+    'building_校門口': { // 校門口
         name: '校門口',
         description: '國立中興大學的主要入口，具有代表性的校園地標。',
-        cameraOffset: new THREE.Vector3(0, 10, 50) // 攝影機置於校門口正前方，稍微遠一點
+        cameraOffset: new THREE.Vector3(0, 0, -90) // 攝影機置於校門口正前方，稍微遠一點
     },
-    'building_crop_science_building': { // 作物科學大樓
+    'building_作物科學大樓': { // 作物科學大樓
         name: '作物科學大樓',
         description: '作物科學大樓是農學院的重點建築，致力於作物育種、栽培技術及農業生物科技的研究與教學。',
-        cameraOffset: new THREE.Vector3(-25, 15, 25)
+        cameraOffset: new THREE.Vector3(190, 0, 0)
     },
-    'building_yunping_building': { // 雲平樓
+    'building_雲平樓': { // 雲平樓
         name: '雲平樓',
         description: '雲平樓是一棟多功能大樓，提供行政辦公、會議及部分研究室空間。',
-        cameraOffset: new THREE.Vector3(0, 18, -45) // 假設位置
+        cameraOffset: new THREE.Vector3(-90, 0, 90) // 假設位置
     },
-    'building_skating_rink': { // 溜冰場
+    'building_溜冰場': { // 溜冰場
         name: '溜冰場',
         description: '校園內的休閒娛樂設施，提供學生和教職員進行溜冰活動的場所。',
-        cameraOffset: new THREE.Vector3(15, 8, -15) // 較低矮，攝影機也低一點
+        cameraOffset: new THREE.Vector3(0, 50, 90) // 較低矮，攝影機也低一點
     },
-    'building_greenhouse': { // 溫室
+    'building_溫室': { // 溫室
         name: '溫室',
         description: '用於植物研究和教學的實驗溫室，栽培多種植物供學術探索。',
-        cameraOffset: new THREE.Vector3(-10, 10, -20)
+        cameraOffset: new THREE.Vector3(0, 0, 90)
     },
-    'building_wannian_building': { // 萬年樓
+    'building_萬年樓': { // 萬年樓
         name: '萬年樓',
         description: '萬年樓是校園內歷史悠久的建築之一，承載著豐富的校園記憶與學術發展。',
-        cameraOffset: new THREE.Vector3(30, 15, -10)
+        cameraOffset: new THREE.Vector3(50, 0, 90)
     },
-    'building_agri_env_building': { // 農環大樓 (農業環境大樓)
+    'building_農環大樓': { // 農環大樓 (農業環境大樓)
         name: '農環大樓',
         description: '農環大樓專注於農業與環境科學領域的研究，探討永續農業發展與環境保護議題。',
-        cameraOffset: new THREE.Vector3(-15, 20, 0) // 可能較高，攝影機抬高
+        cameraOffset: new THREE.Vector3(0, 0, -190) // 可能較高，攝影機抬高
     },
-    'building_incubation_center': { // 興創基地
+    'building_興創基地': { // 興創基地
         name: '興創基地',
         description: '提供創新創業團隊的孵化空間與資源，是學生實現創業夢想的平台。',
-        cameraOffset: new THREE.Vector3(-35, 10, 10)
+        cameraOffset: new THREE.Vector3(0, 20, -110)
     },
-    'building_guard_room': { // 警衛室
+    'building_警衛室': { // 警衛室
         name: '警衛室',
         description: '校園安全與門禁管理的重要站點，負責維護校園秩序。',
-        cameraOffset: new THREE.Vector3(5, 5, 20) // 較小建築，拉近
+        cameraOffset: new THREE.Vector3(0, 0, 90) // 較小建築，拉近
     },
-    'building_social_cultural_building': { // 社館大樓 (社團活動館)
-        name: '社館大樓',
+    'building_社管大樓': { // 社館大樓
+        name: '社管大樓',
         description: '社館大樓是各類學生社團的活動中心，提供排練、會議和交流的空間。',
-        cameraOffset: new THREE.Vector3(10, 15, -20)
+        cameraOffset: new THREE.Vector3(90, 0, 0)
     },
-    'building_basketball_court': { // 籃球場
-        name: '籃球場',
-        description: '戶外運動場所，提供學生進行籃球活動及體育鍛鍊的空間。',
-        cameraOffset: new THREE.Vector3(0, 10, -30) // 較空曠區域，攝影機低一點
+    
+    'building_籃球場-左': {
+        name: '左側籃球場',
+        description: '校園的籃球場，是下課後同學休閒打球的好去處。',
+        cameraOffset: new THREE.Vector3(0, 50, 90)
+    },
+    'building_籃球場-中': {
+        name: '中間籃球場',
+        description: '校園的籃球場，是下課後同學休閒打球的好去處。',
+        cameraOffset: new THREE.Vector3(0, 50, 90)
+    },
+    'building_籃球場-右': {
+        name: '右側籃球場',
+        description: '校園的籃球場，是下課後同學休閒打球的好去處。',
+        cameraOffset: new THREE.Vector3(0, 50, 90)
     }
 };
 
@@ -180,8 +176,6 @@ function init() {
     const loader = new GLTFLoader();
 
     // 載入模型
-    // 根據您提供的截圖，模型檔案位於 'model' 資料夾內，而 'model' 資料夾與 'js' 資料夾同級。
-    // 所以從 'main.js' (位於 'js/' ) 存取模型需要 '../model/NCHU_model.glb'。
     loader.load(
         '../model/NCHU_model.glb', // 模型檔案路徑修正
         (gltf) => {
@@ -217,11 +211,31 @@ function init() {
         }
     );
 
+    // **新增部分：解決右側說明欄位點擊穿透問題**
+    // 阻止右側說明欄的點擊事件穿透到 Three.js 場景
+    buildingInfoPanel.addEventListener('click', (event) => {
+        event.stopPropagation(); // 阻止事件向上傳播
+        console.log('點擊了建築物資訊面板，阻止事件穿透。');
+    });
+
+    // 阻止右側建築物列表的點擊事件穿透到 Three.js 場景
+    buildingList.addEventListener('click', (event) => {
+        event.stopPropagation(); // 阻止事件向上傳播
+        console.log('點擊了建築物列表，阻止事件穿透。');
+    });
+
+    // 阻止返回預設視角按鈕的點擊事件穿透
+    backToDefaultViewBtn.addEventListener('click', (event) => {
+        event.stopPropagation(); // 阻止事件向上傳播
+        console.log('點擊了返回按鈕，阻止事件穿透。');
+    });
+    // **新增部分結束**
+
     // 事件監聽器
     window.addEventListener('pointermove', onPointerMove); // 滑鼠移動事件
     window.addEventListener('click', onClick); // 滑鼠點擊事件
     window.addEventListener('resize', onWindowResize); // 視窗大小改變事件
-    backToDefaultViewBtn.addEventListener('click', backToDefaultView); // 返回按鈕點擊事件
+    // backToDefaultViewBtn.addEventListener('click', backToDefaultView); // 此行已移至上方，由新增的 stopPropagation 處理
 }
 
 /**
@@ -279,10 +293,10 @@ function focusOnObject(object) {
     // 根據建築物最大維度計算期望的攝影機距離，確保建築物全景可見
     const maxDim = Math.max(size.x, size.y, size.z);
     // 調整這個係數來控制放大時離建築物的距離，越大則越遠。
-    const desiredDistance = maxDim * 2.5; 
+    const desiredDistance = maxDim * 2.5;
 
     // 計算攝影機的高度偏移，使其可以較好地看到整個建築物
-    const cameraHeightOffset = size.y * 0.7; 
+    const cameraHeightOffset = size.y * 0.7;
 
     // 計算攝影機的目標位置：
     // 建築物中心 + (從原點到建築物方向 * 期望距離) + 垂直偏移
