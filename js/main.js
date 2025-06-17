@@ -103,7 +103,7 @@ const BUILDING_DATA = {
         description: '社館大樓是各類學生社團的活動中心，提供排練、會議和交流的空間。',
         cameraOffset: new THREE.Vector3(90, 0, 0)
     },
-    
+
     'building_籃球場-左': {
         name: '左側籃球場',
         description: '校園的籃球場，是下課後同學休閒打球的好去處。',
@@ -187,13 +187,18 @@ function init() {
             // 遍歷模型中的所有物件，找出可互動的建築物 Group
             model.traverse(child => {
                 // 檢查是否為 Group 類型且名稱以 'building_' 開頭
-                if (child.type === 'Group' && child.name.startsWith('building_')) {
+                if (child.type === 'Group' &&
+                    child.name.startsWith('building_') &&
+                    !child.name.includes('籃球場-左') &&
+                    !child.name.includes('籃球場-右')) {
                     interactiveBuildings.push(child); // 將符合條件的 Group 添加到互動列表中
                     console.log('    - 識別為互動建築物 Group:', child.name); // 輸出被識別為互動建築物的名稱
                     addBuildingButton(child); // 為每個建築物添加按鈕到右側選單
                 }
                 // 忽略模型中非建築物的網格 (例如：樹木、地面、路燈等)，它們不應觸發任何互動效果。
             });
+           
+
             console.log('可互動建築物列表 (Group):', interactiveBuildings.map(b => b.name));
 
             // 模型載入完成，隱藏載入提示
@@ -228,6 +233,7 @@ function init() {
     backToDefaultViewBtn.addEventListener('click', (event) => {
         event.stopPropagation(); // 阻止事件向上傳播
         console.log('點擊了返回按鈕，阻止事件穿透。');
+        backToDefaultView();
     });
     // **新增部分結束**
 
